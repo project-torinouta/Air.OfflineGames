@@ -1,12 +1,12 @@
 #!/bin/bash
 
+stty -echo -icanon
+
 true=1
 false=0
 
 # Notice the color defined below is just for my kitty + everforest terminal, if
 # you don't adjust to them you can also modify.
-
-color_background_black=47
 
 color_foreground_red=31
 color_foreground_green=32
@@ -228,18 +228,30 @@ function draw_game() {
 
   # Use tput to place the cursor to left-up corner and decrease the re-render
 
+  echo -n "  "
+  for ((i=0; i < $playfield_width; i++)); do
+    echo -n "="
+  done
+  echo ""
+
   for ((i=$tetromino_block_length; i < $(( $playfield_height + $tetromino_block_length )); i++)); do
     echo -n "  "
     for ((j=0; j < $playfield_width; j++)); do
       index=$(( $i * $playfield_width + $j ))
       if [[ ${playfield[$index]} -ne 0 ]]; then
-        echo -ne "\033[${playfield[$index]};${color_background_black}m#\033[0m"
+        echo -ne "\033[${playfield[$index]}m#\033[0m"
       else
-        echo -ne "\033[;${color_background_black}m \033[0m"
+        echo -ne "\033[m \033[0m"
       fi
     done
     echo ""
   done
+
+  echo -n "  "
+  for ((i=0; i < $playfield_width; i++)); do
+    echo -n "="
+  done
+  echo ""
 }
 
 function arrow_control() {
@@ -305,15 +317,14 @@ function arrow_control() {
 
 echo -e "\033c"
 tput civis
-stty -echo -icanon
 trap "stty sane; tput cnorm; echo -e '\nExit Tetro by user input'; exit 0" SIGINT SIGTERM EXIT
 
 last_update=$( date +%s%N )
 while [ $is_game_over -ne $true ]; do
-  if read -n 1 -t 0.1 key; then
+  if read -n 1 -t 0.005 -r key; then
     case "$key" in
       $'\e')
-        if read -n 2 -t 0.01 esc_sequence; then
+        if read -n 2 -t 0.005 -r esc_sequence; then
           case "$esc_sequence" in
             "[A") ;;
             "[B") arrow_control "down";  draw_game ;;
@@ -329,6 +340,8 @@ while [ $is_game_over -ne $true ]; do
   if [[ $(( $current_time - $last_update )) -ge $update_interval ]]; then
     update_game
     last_update=$current_time
+  else 
+    draw_game
+    sleep 0.001
   fi
-  draw_game
 done
