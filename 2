@@ -81,7 +81,7 @@ tetrominoes=(
   "tetromino_t_shaped_state_4"
 )
 
-update_interval=400000000
+sleep_gap=0.2
 playfield_width=30
 playfield_height=20
 tetromino_block_length=4
@@ -246,7 +246,7 @@ function arrow_control() {
   direction=$1
   condition=$false
 
-  case "$direction" in
+  case $direction in
     $"left")
       condition=$( test_collision $(( $current_x - 1 )) $current_y )
       ;;
@@ -269,7 +269,7 @@ function arrow_control() {
   done
 
   if [[ $condition -eq $false ]]; then
-    case "$direction" in
+    case $direction in
       $"left")
         current_x=$(( $current_x - 1))
         ;;
@@ -305,12 +305,10 @@ function arrow_control() {
 
 echo -e "\033c"
 tput civis
-stty -echo -icanon
-trap "stty sane; tput cnorm; echo -e '\nExit Tetro by user input'; exit 0" SIGINT SIGTERM EXIT
-
-last_update=$( date +%s%N )
+stty -echo
+trap "stty -raw echo; tput cnorm; echo -e '\nExit Tetro by user input'; exit 0" SIGINT SIGTERM EXIT
 while [ $is_game_over -ne $true ]; do
-  if read -n 1 -t 0.1 key; then
+  if read -n 1 -t 0.2 key; then
     case "$key" in
       $'\e')
         if read -n 2 -t 0.01 esc_sequence; then
@@ -325,10 +323,7 @@ while [ $is_game_over -ne $true ]; do
       [qQ]) echo -e "\nExit Tetro by user input"; exit 0 ;;
     esac
   fi
-  current_time=$( date +%s%N )
-  if [[ $(( $current_time - $last_update )) -ge $update_interval ]]; then
-    update_game
-    last_update=$current_time
-  fi
+  update_game
   draw_game
+  sleep $sleep_gap
 done
