@@ -76,6 +76,78 @@ tetromino_t_shaped_state_4=(
   0 0 1 0
   0 0 0 0
 )
+tetromino_j_shaped_state_1=(
+  0 0 1 0
+  0 0 1 0
+  0 1 1 0
+  0 0 0 0
+)
+tetromino_j_shaped_state_2=(
+  0 1 0 0
+  0 1 1 1
+  0 0 0 0
+  0 0 0 0
+)
+tetromino_j_shaped_state_3=(
+  0 0 1 1
+  0 0 1 0
+  0 0 1 0
+  0 0 0 0
+)
+tetromino_j_shaped_state_4=(
+  0 0 0 0
+  0 1 1 1
+  0 0 0 1
+  0 0 0 0
+)
+tetromino_l_shaped_state_1=(
+  0 0 1 0
+  0 0 1 0
+  0 0 1 1
+  0 0 0 0
+)
+tetromino_l_shaped_state_2=(
+  0 0 0 0
+  0 1 1 1
+  0 1 0 0
+  0 0 0 0
+)
+tetromino_l_shaped_state_3=(
+  0 1 1 0
+  0 0 1 0
+  0 0 1 0
+  0 0 0 0
+)
+tetromino_l_shaped_state_4=(
+  0 0 0 1
+  0 1 1 1
+  0 0 0 0
+  0 0 0 0
+)
+tetromino_z_shaped_state_1=(
+  0 0 0 0
+  1 1 0 0
+  0 1 1 0
+  0 0 0 0
+)
+tetromino_z_shaped_state_2=(
+  0 1 0 0
+  1 1 0 0
+  1 0 0 0
+  0 0 0 0
+)
+tetromino_s_shaped_state_1=(
+  0 0 0 0
+  0 1 1 0
+  1 1 0 0
+  0 0 0 0
+)
+tetromino_s_shaped_state_2=(
+  1 0 0 0
+  1 1 0 0
+  0 1 0 0
+  0 0 0 0
+)
 
 # Bash doesn't have two-dimensional array so we should use one-dimensional
 # reference array to simulate.
@@ -88,6 +160,18 @@ tetrominoes=(
   "tetromino_t_shaped_state_2"
   "tetromino_t_shaped_state_3"
   "tetromino_t_shaped_state_4"
+  "tetromino_j_shaped_state_1"
+  "tetromino_j_shaped_state_2"
+  "tetromino_j_shaped_state_3"
+  "tetromino_j_shaped_state_4"
+  "tetromino_l_shaped_state_1"
+  "tetromino_l_shaped_state_2"
+  "tetromino_l_shaped_state_3"
+  "tetromino_l_shaped_state_4"
+  "tetromino_z_shaped_state_1"
+  "tetromino_z_shaped_state_2"
+  "tetromino_s_shaped_state_1"
+  "tetromino_s_shaped_state_2"
 )
 
 update_interval=400000000
@@ -157,33 +241,60 @@ function new_tetromino() {
 }
 new_tetromino
 
-function is_two_tetromino_equal() {
-  if [[ ${#1[@]} -ne ${#2[@]} ]]; then
-    echo -e "\033[${color_foreground_red}mThe length of two tetrominoes are not equal\033[0m"
-    exit 2
-  fi
+function return_rotated_tetromino_name() {
+  case $current_tetromino_name in
+    tetromino_straight_state_1)
+      printf "tetromino_straight_state_2";;
+    tetromino_straight_state_2)
+      printf "tetromino_straight_state_1";;
+    tetromino_square)
+      printf "tetromino_square";;
+    tetromino_t_shaped_state_1)
+      printf "tetromino_t_shaped_state_2";;
+    tetromino_t_shaped_state_2)
+      printf "tetromino_t_shaped_state_3";;
+    tetromino_t_shaped_state_3)
+      printf "tetromino_t_shaped_state_4";;
+    tetromino_t_shaped_state_4)
+      printf "tetromino_t_shaped_state_1";;
+    tetromino_j_shaped_state_1)
+      printf "tetromino_j_shaped_state_2";;
+    tetromino_j_shaped_state_2)
+      printf "tetromino_j_shaped_state_3";;
+    tetromino_j_shaped_state_3)
+      printf "tetromino_j_shaped_state_4";;
+    tetromino_j_shaped_state_4)
+      printf "tetromino_j_shaped_state_1";;
+    tetromino_l_shaped_state_1)
+      printf "tetromino_l_shaped_state_2";;
+    tetromino_l_shaped_state_2)
+      printf "tetromino_l_shaped_state_3";;
+    tetromino_l_shaped_state_3)
+      printf "tetromino_l_shaped_state_4";;
+    tetromino_l_shaped_state_4)
+      printf "tetromino_l_shaped_state_1";;
+    tetromino_z_shaped_state_1)
+      printf "tetromino_z_shaped_state_2";;
+    tetromino_z_shaped_state_2)
+      printf "tetromino_z_shaped_state_1";;
+    tetromino_s_shaped_state_1)
+      printf "tetromino_s_shaped_state_2";;
+    tetromino_s_shaped_state_2)
+      printf "tetromino_s_shaped_state_1";;
+  esac
 
-  for ((i=0; i < ${#1[@]}; i++)); do
-    if [[ ${1[$i]} -ne ${2[$i]} ]]; then
-      return $false
-    fi
-  done
-  return $true
-}
-
-function rotate_current_tetromino() {
-  if [[ $( is_two_tetromino_equal current_tetromino tetromino_straight_state_1 ) -eq $true ]]; then
-    current_tetromino=tetromino_straight_state_2
-    return
-  elif [[ $( is_two_tetromino_equal current_tetromino tetromino_straight_state_2 ) -eq $true ]]; then
-    current_tetromino=tetromino_straight_state_1
-    return
-  fi
+  return 0
 }
 
 function test_collision() {
   local x=$1
   local y=$2
+  local input_tetromino_name="$3"
+  declare -n test_tetromino="$current_tetromino_name"
+
+  if [[ $input_tetromino_name ]]; then
+    declare -n test_tetromino="$input_tetromino_name"
+  fi
 
   for ((i=0; i < $tetromino_block_length; i++)); do
     for ((j=0; j < $tetromino_block_length; j++)); do
@@ -194,7 +305,7 @@ function test_collision() {
         "debug" \
         "Beginning to debug the collision test procedure for position ($j, $i) ..."
 
-      if [[ ${current_tetromino[$(( $i * $tetromino_block_length + $j ))]} -eq 1 ]]; then
+      if [[ ${test_tetromino[$(( $i * $tetromino_block_length + $j ))]} -eq 1 ]]; then
         log_file \
           "debug" \
           "Debugging position ($j, $i) in current tetromino and its a block"
@@ -213,7 +324,7 @@ x of tetromino is $x, y of tetromino is $y and position \
         "Finishing to debug the collision test procedure for position ($j, $i) ..."
 
       if [[ \
-        ${current_tetromino[$(( $i * $tetromino_block_length + $j ))]} -eq 1 && \
+        ${test_tetromino[$(( $i * $tetromino_block_length + $j ))]} -eq 1 && \
         (${playfield[$(( $test_y * $playfield_width + $test_x ))]} -ne 0 || \
          $test_y -ge $(( $playfield_height + $tetromino_block_length )) || \
          $test_x -lt 0 || \
@@ -333,6 +444,10 @@ function arrow_control() {
       condition=$( test_collision $current_x $(( $current_y + 1)) )
       log_file "debug" "Math the case DownArrow"
       ;;
+    up)
+      condition=$( test_collision $current_x $current_y $( return_rotated_tetromino_name $current_tetromino_name ) )
+      log_file "debug" "Match the case UpArrow"
+      ;;
   esac
 
   log_file "debug" "The 'condition' variable has been set to $condition"
@@ -348,6 +463,9 @@ function arrow_control() {
       down)
         current_y=$(( $current_y + 1))
         ;;
+      up)
+        current_tetromino_name=$( return_rotated_tetromino_name $current_tetromino_name )
+        declare -gn current_tetromino="$current_tetromino_name"
     esac
 
     log_file "debug" "Move the current tetromino to ($current_x, $current_y)"
@@ -387,7 +505,7 @@ while [ $is_game_over -ne $true ]; do
       $'\x1B')
         if read -n 2 -t 0.05 -r esc_sequence; then
           case "$esc_sequence" in
-            "[A") ;;
+            "[A") arrow_control "up";    draw_game ;;
             "[B") arrow_control "down";  draw_game ;;
             "[C") arrow_control "right"; draw_game ;;
             "[D") arrow_control "left";  draw_game ;;
