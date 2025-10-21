@@ -179,6 +179,7 @@ playfield_width=30
 playfield_height=20
 tetromino_block_length=4
 is_game_over=$false
+score=0
 current_x=0
 current_y=0
 current_color=0
@@ -341,6 +342,18 @@ x of tetromino is $x, y of tetromino is $y and position \
   return 0
 }
 
+function test_gameover() {
+  for ((i=0; i < $playfield_width; i++)); do
+    if [[ ${playfield[$(( ($tetromino_block_length - 1) * $playfield_width + $i ))]} -ne 0 ]]; then
+      is_game_over=$true
+      clear
+      echo -e "\033[${color_foreground_red}mGame Over. Your final score is $score\033[m"
+      exit 1
+    fi
+  done
+  is_game_over=$false
+}
+
 function update_game() {
   # Clear the last drawn current tetromino
 
@@ -377,6 +390,7 @@ function update_game() {
         fi
       done
     done
+    test_gameover
     new_tetromino
   fi
 }
@@ -494,7 +508,7 @@ function arrow_control() {
 
 echo -e "\033c"
 tput civis
-trap "stty echo icanon; tput cnorm; echo -e '\nExit Tetro by user input'; exit 0" SIGINT SIGTERM EXIT
+trap "stty echo icanon; tput cnorm; exit 0" SIGINT SIGTERM EXIT
 
 last_update=$( date +%s%N )
 while [ $is_game_over -ne $true ]; do
