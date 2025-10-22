@@ -194,8 +194,8 @@ next_tetromino_name=""
 # This procedure initializes the playfield and use one-dimensional array to
 # simulate the two-dimensional array.
 
-for ((i=0; i < $(( $playfield_height + $tetromino_block_length )); i++)); do
-  for ((j=0; j < $playfield_width; j++)); do
+for (( i=0; i < $(( $playfield_height + $tetromino_block_length )); i++ )); do
+  for (( j=0; j < $playfield_width; j++ )); do
     index=$(( $i * $playfield_height + $j))
     playfield[$index]=0
   done
@@ -238,7 +238,6 @@ function new_tetromino() {
   current_x=$(( ($playfield_width - $tetromino_block_length) / 2 ))
   current_color=$( get_random_element color_foreground )
 
-  log_file "debug" "Reset the new tetromino to ($current_x, $current_y)"
 }
 new_tetromino
 
@@ -297,32 +296,10 @@ function test_collision() {
     declare -n test_tetromino="$input_tetromino_name"
   fi
 
-  for ((i=0; i < $tetromino_block_length; i++)); do
-    for ((j=0; j < $tetromino_block_length; j++)); do
+  for (( i=0; i < $tetromino_block_length; i++ )); do
+    for (( j=0; j < $tetromino_block_length; j++ )); do
       local test_x=$(( $x + $j ))
       local test_y=$(( $y + $i ))
-
-      log_file \
-        "debug" \
-        "Beginning to debug the collision test procedure for position ($j, $i) ..."
-
-      if [[ ${test_tetromino[$(( $i * $tetromino_block_length + $j ))]} -eq 1 ]]; then
-        log_file \
-          "debug" \
-          "Debugging position ($j, $i) in current tetromino and its a block"
-      fi
-
-      if [[ ${playfield[$(( $test_y * $playfield_width + $test_x ))]} -ne 0 ]]; then
-        log_file \
-          "debug" \
-          "Debugging position ($j, $i) in current tetromino, current test
-x of tetromino is $x, y of tetromino is $y and position \
-($test_x, $test_y) of playfield is already filled."
-      fi
-
-      log_file \
-        "debug" \
-        "Finishing to debug the collision test procedure for position ($j, $i) ..."
 
       if [[ \
         ${test_tetromino[$(( $i * $tetromino_block_length + $j ))]} -eq 1 && \
@@ -331,19 +308,17 @@ x of tetromino is $x, y of tetromino is $y and position \
          $test_x -lt 0 || \
          $test_x -ge $playfield_width)
       ]]; then
-        log_file "debug" "Function 'test_collision' returned true"
         printf "%d" $true
         return 0
       fi
     done
   done
-  log_file "debug" "Function 'test_collision' returned false"
   printf "%d" $false
   return 0
 }
 
 function test_gameover() {
-  for ((i=0; i < $playfield_width; i++)); do
+  for (( i=0; i < $playfield_width; i++ )); do
     if [[ ${playfield[$(( ($tetromino_block_length - 1) * $playfield_width + $i ))]} -ne 0 ]]; then
       is_game_over=$true
       clear
@@ -354,11 +329,61 @@ function test_gameover() {
   is_game_over=$false
 }
 
+function test_clear() {
+  local rows_flag=()
+
+  continuous_row=0
+  for (( i=$(( $playfield_height + $tetromino_block_length - 1 )); i >= 0; i-- )); do
+    is_full=$true
+    for (( j=0; j < $playfield_width; j++ )); do
+      index=$(( $playfield_width * $i + $j ))
+      if [[ ${playfield[$index]} -eq 0 ]]; then
+        is_full=$false
+        break
+      fi
+    done
+
+    rows_flag[$i]=$is_full
+
+    if [[ $is_full -eq $true ]]; then
+      continuous_row=$(( $continuous_row + 1 ))
+    else
+      if [[ $continuous_row -ge 1 && $continuous_row -le 3 ]]; then
+        score=$(( $score + $continuous_row * 100 ))
+      elif [[ $continuous_row -ge 4 ]]; then
+        score=$(( $score + $continuous_row * 150 ))
+      fi
+      continuous_row=0
+    fi
+  done
+
+  for (( i=$(( $playfield_height + $tetromino_block_length - 1 )); i >= 0; i-- )); do
+    if [[ ${rows_flag[$i]} -eq $true ]]; then
+      local last_not_full_index=$i
+      for (( j=$i; j >= 0; j-- )); do
+        if [[ ${rows_flag[$j]} -eq $false ]]; then
+          last_not_full_index=$j
+          rows_flag[$j]=$true
+          break
+        fi
+      done
+
+      if [[ $last_not_full_index -ne $i ]]; then
+        for (( k=0; k < $playfield_width; k++ )); do
+          target_index=$(( $i * $playfield_width + $k ))
+          source_index=$(( $last_not_full_index * $playfield_width + $k ))
+          playfield[$target_index]=${playfield[$source_index]}
+        done
+      fi
+    fi
+  done
+}
+
 function update_game() {
   # Clear the last drawn current tetromino
 
-  for ((i=0; i < $tetromino_block_length; i++)); do
-    for ((j=0; j < $tetromino_block_length; j++)); do
+  for (( i=0; i < $tetromino_block_length; i++ )); do
+    for (( j=0; j < $tetromino_block_length; j++ )); do
       local tetromino_index=$(( $i * $tetromino_block_length + $j ))
       local index=$(( ($current_y + $i) * $playfield_width + ($current_x + $j) ))
       if [[ ${current_tetromino[$tetromino_index]} -eq 1 ]]; then
@@ -371,8 +396,8 @@ function update_game() {
 
   if [[ $( test_collision $current_x $(( $current_y + 1 )) ) -eq "$false" ]]; then
     current_y=$(( $current_y + 1 ))
-    for ((i=0; i < $tetromino_block_length; i++)); do
-      for ((j=0; j < $tetromino_block_length; j++)); do
+    for (( i=0; i < $tetromino_block_length; i++ )); do
+      for (( j=0; j < $tetromino_block_length; j++ )); do
         local tetromino_index=$(( $i * $tetromino_block_length + $j ))
         if [[ ${current_tetromino[$tetromino_index]} -eq 1 ]]; then
           local index=$(( ($current_y + $i) * $playfield_width + ($current_x + $j) ))
@@ -381,8 +406,8 @@ function update_game() {
       done
     done
   else
-    for ((i=0; i < $tetromino_block_length; i++)); do
-      for ((j=0; j < $tetromino_block_length; j++)); do
+    for (( i=0; i < $tetromino_block_length; i++ )); do
+      for (( j=0; j < $tetromino_block_length; j++ )); do
         local tetromino_index=$(( $i * $tetromino_block_length + $j ))
         if [[ ${current_tetromino[$tetromino_index]} -eq 1 ]]; then
           index=$(( ($current_y + $i) * $playfield_width + ($current_x + $j) ))
@@ -391,6 +416,7 @@ function update_game() {
       done
     done
     test_gameover
+    test_clear
     new_tetromino
   fi
 }
@@ -400,15 +426,17 @@ function draw_game() {
 
   # Use tput to place the cursor to left-up corner and decrease the re-render
 
+  echo -e "  \033[${color_foreground_yellow}mYour score: $score\033[m"
+
   echo -n "  "
-  for ((i=0; i < $playfield_width; i++)); do
+  for (( i=0; i < $playfield_width; i++ )); do
     echo -n "="
   done
   echo ""
 
-  for ((i=$tetromino_block_length; i < $(( $playfield_height + $tetromino_block_length )); i++)); do
+  for (( i=$tetromino_block_length; i < $(( $playfield_height + $tetromino_block_length )); i++ )); do
     echo -n "  "
-    for ((j=0; j < $playfield_width; j++)); do
+    for (( j=0; j < $playfield_width; j++ )); do
       index=$(( $i * $playfield_width + $j ))
       if [[ ${playfield[$index]} -ne 0 ]]; then
         echo -ne "\033[${playfield[$index]}m#\033[0m"
@@ -420,7 +448,7 @@ function draw_game() {
   done
 
   echo -n "  "
-  for ((i=0; i < $playfield_width; i++)); do
+  for (( i=0; i < $playfield_width; i++ )); do
     echo -n "="
   done
   echo ""
@@ -430,10 +458,8 @@ function arrow_control() {
   direction=$1
   condition=$false
 
-  log_file "debug" "Read the arrow key '$direction'"
-
-  for ((i=0; i < $tetromino_block_length; i++)); do
-    for ((j=0; j < $tetromino_block_length; j++)); do
+  for ((i=0; i < $tetromino_block_length; i++ )); do
+    for (( j=0; j < $tetromino_block_length; j++ )); do
       local tetromino_index=$(( $i * $tetromino_block_length + $j ))
       local index=$(( ($current_y + $i) * $playfield_width + ($current_x + $j) ))
       if [[ ${current_tetromino[$tetromino_index]} -eq 1 ]]; then
@@ -448,23 +474,17 @@ function arrow_control() {
   case "$direction" in
     left)
       condition=$( test_collision $(( $current_x - 1 )) $current_y )
-      log_file "debug" "Match the case LeftArrow"
       ;;
     right)
       condition=$( test_collision $(( $current_x + 1 )) $current_y )
-      log_file "debug" "Match the case RightArrow"
       ;;
     down)
       condition=$( test_collision $current_x $(( $current_y + 1)) )
-      log_file "debug" "Math the case DownArrow"
       ;;
     up)
       condition=$( test_collision $current_x $current_y $( return_rotated_tetromino_name $current_tetromino_name ) )
-      log_file "debug" "Match the case UpArrow"
       ;;
   esac
-
-  log_file "debug" "The 'condition' variable has been set to $condition"
 
   if [[ $condition -eq $false ]]; then
     case "$direction" in
@@ -482,10 +502,8 @@ function arrow_control() {
         declare -gn current_tetromino="$current_tetromino_name"
     esac
 
-    log_file "debug" "Move the current tetromino to ($current_x, $current_y)"
-
-    for ((i=0; i < $tetromino_block_length; i++)); do
-      for ((j=0; j < $tetromino_block_length; j++)); do
+    for (( i=0; i < $tetromino_block_length; i++ )); do
+      for (( j=0; j < $tetromino_block_length; j++ )); do
         local tetromino_index=$(( $i * $tetromino_block_length + $j ))
         if [[ ${current_tetromino[$tetromino_index]} -eq 1 ]]; then
           local index=$(( ($current_y + $i) * $playfield_width + ($current_x + $j) ))
@@ -513,7 +531,6 @@ trap "stty echo icanon; tput cnorm; exit 0" SIGINT SIGTERM EXIT
 last_update=$( date +%s%N )
 while [ $is_game_over -ne $true ]; do
   if read -n 1 -t 0.05 -r key; then
-    log_file "debug" "Read the key '$key' from keyboard"
 
     case "$key" in
       $'\x1B')
